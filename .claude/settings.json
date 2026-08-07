@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(src/**)",
+      "Write(src/**)",
+      "Edit(**/*.tsx)",
+      "Write(**/*.tsx)"
+    ],
+    "allow": [
+      "Bash(npm run typecheck)",
+      "Bash(npm run test*)",
+      "Bash(npm run lint)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-src-edit.mjs"
+            ],
+            "statusMessage": "学習ガードを確認中"
+          }
+        ]
+      }
+    ]
+  }
+}
