@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+trace/
+*.tsbuildinfo
+.DS_Store
+.vscode/
