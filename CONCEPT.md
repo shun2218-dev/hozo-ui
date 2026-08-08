@@ -39,11 +39,13 @@ React のコンポーネントライブラリは飽和している。Radix UI、
 
 「気をつけて使ってね」を型に置き換える。discriminated union、`never`、条件型を使い、間違った prop の組み合わせをそもそも書けなくする。
 
-```ts
+```tsx
 // アイコンのみなら aria-label が必須になる
-<Button variant="icon" />                    // ❌ コンパイルエラー
-<Button variant="icon" aria-label="閉じる" /> // ✅
+<Button iconOnly><CloseIcon /></Button>                       // ❌ aria-label が無い
+<Button iconOnly aria-label="閉じる"><CloseIcon /></Button>   // ✅
 ```
+
+判別子は `iconOnly` という専用の prop に置き、`variant`（見た目）とは分ける。同じ prop に混ぜると「primary なアイコンボタン」が表現できなくなるため。
 
 ### 原則 2 — 型は推論されるもので、書かされるものではない
 
