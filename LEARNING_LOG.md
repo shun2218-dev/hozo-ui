@@ -43,7 +43,7 @@
 
 | ID | トピック | 対象 | Lv | 到達 | 日付 |
 |---|---|---|---|---|---|
-| — | まだ記録なし | — | — | — | — |
+| L-001 | 排他的 props（discriminated union） | Button | 1 | ○ | 2026-08-07 |
 
 ---
 
@@ -51,13 +51,78 @@
 
 <!-- 新しい記録を上に追加していく -->
 
+### L-001 | 排他的 props（discriminated union）
+
+- **日付**: 2026-08-07
+- **対象**: Button
+- **Lv**: 1
+- **到達**: ○
+- **使った道具**: discriminated union / boolean リテラルの判別子（`iconOnly: true`） / `iconOnly?: never` / `ComponentPropsWithRef<"button">` / インデックスアクセス型 / `keyof` / `expectTypeOf().not.toExtend()` / `@ts-expect-error`
+- **詰まった点**:
+  - `function Button<ButtonProps>()` と書き、**型引数の宣言**と props の型注釈を混同した。import した型がローカル宣言に覆い隠され、同じ名前で 2 回「未使用」と言われた
+  - `variant: never`（省略可の印なし）にしたため、その分岐を満たすオブジェクトが存在せず union が実質 1 本になっていた
+  - `A & B | C` の優先順位。`&` が先に結合するため、片方の分岐にだけ DOM props が付いていた
+  - `expectTypeOf<Props>().toExtend<Props["onClick"]>()` と書き、主語と述語がねじれた。エラーは 287 プロパティ分展開されて読めなかった（docs の R-001）
+  - JSX 型テストの置き方。式文にすると `no-unused-expressions`、変数に受けると `noUnusedLocals`。`test` のコールバックの返り値にして解決
+  - `aria-label` を実装側で渡そうとした。rest 分割代入で既に `...props` に入っており転送済みだった
+  - 判別子を `iconOnly: boolean` にしたため、`iconOnly={false}` がアイコンボタン側の分岐に吸い込まれた。`true` リテラルにして解決
+- **解決の鍵**:
+  - **代入可能性の検査では回帰を検出できない**こと。型レベルの代入可能性は余剰プロパティを無視するので、片方の分岐から DOM props が抜けても `.toExtend` は通る。`keyof`（union に対しては共通キーのみを返す）とインデックスアクセス（全メンバーに存在しないとエラー）だけが構造の欠落を捕まえられる
+  - `@ts-expect-error` は直後 1 行のあらゆるエラーを飲むので、否定の主張は `.not.toExtend` で型として書くほうが精度が高い
+- **一言で説明すると**: 省略可能なプロパティは代入可能性のチェックでは構造の欠落を検出できないため、型が使用可能かどうかは `.toExtend` や `.not.toExtend` を使用してチェックを行い、キーが存在するかは `keyof T` や `T["key"]` で確認する必要がある。
+- **関連**: D-003 / [docs/error-messages/button.md](docs/error-messages/button.md)
+
 ---
 
 ## 積み残し・疑問
 
 解決していない疑問を貯めておく。後で回収する。
 
-- [ ]
+- [ ] **ヒント型を採用するか**（次に着手）
+  - 目的: docs の E-003 / E-004 が △。`Type 'boolean' is not assignable to type 'true'.` だけでは「なぜ `true` だけか」「代わりにどう書くか」が伝わらない
+  - 手法: 禁じたい値にオブジェクト型を intersection で貼り、**プロパティ名として文章を印字させる**
+  - 検証済みの制約: (1) 日本語は tsc の CLI 出力でエスケープされ読めない → 英語のみ (2) ヒント型をエイリアスに切り出すと `Hint` としか印字されず効果が消える → 直接埋め込みが必須で型定義の可読性が落ちる (3) 対象の型が大きいと畳み込みでメッセージごと消える（R-001 の実例）
+  - 判定基準: 原則 6。可読性の代償に見合わなければ**破棄し、破棄した判断を記録する**
+
+- [ ] **`exactOptionalPropertyTypes: true` の実害**
+  - 想定シナリオ: 省略可の prop を足したとき、`<Button prop={cond ? x : undefined}>` が型エラーになる。条件付きで prop を渡すのは React で普通の書き方
+  - 現状: 自前の省略可 prop が `iconOnly?: never` だけなので実害は出ていない
+  - 修正方針: tsconfig は触らない。**自前の省略可 props を `?: T | undefined` と明示する**（React の `AriaAttributes` が `"aria-label"?: string | undefined` と書いているのと同じ流儀）
+  - 判断時期: 2 個目の省略可 prop を足すとき
+
+- [ ] **`data-icon-only` を公開する設計の是非**
+  - 論点 1: `iconOnly` は「状態」ではなく「入力」。原則 4 が `data-*` で公開せよと言っているのは `data-state` / `data-disabled` のような内部状態。ここからは導けない
+  - 論点 2: data 属性は**公開 API になる**。利用者が CSS セレクタで依存するので、変更が破壊的変更になる
+  - 依存: CONCEPT.md §9「スタイリング方式」未決定。unstyled なら何も出さないが正解になりうる
+  - 併せて未実装: 原則 4 が要求する `className` の merge、`ref` の転送、状態の `data-*` 公開
+  - 判断時期: スタイリング方式を決めるとき
+
+- [ ] **`variant`（見た目）を入れるときの設計**
+  - `iconOnly` を独立した prop にしたので `variant` は空いている。フェーズ 3 の variant システムで使う
+  - 決めること: 判別子を `?: never` で表すか `?: "default"` のような既定値リテラルで表すか。後者はエラーメッセージに選択肢が並ぶ（実測済み: `Type '"primary"' is not assignable to type '"iconOnly" | "default"'.`）が、省略と明示の 2 通りの書き方が生まれる
+  - 判断時期: フェーズ 3 着手前
+
+- [ ] **フォーマッタ未選定**（作業は別ブランチ）
+  - 現状: `src/` は 4 スペース、設定ファイルは 2 で混在
+  - Biome の制約 1: SCSS 非対応（CSS は対応）。ただし SCSS を使うかは §9 のスタイリング方式次第。採用前に現行版で要再確認
+  - Biome の制約 2: 型情報を使った lint ルールが typescript-eslint に及ばない。型が主張のライブラリでこれを捨てる損は大きい
+  - ありうる構成: formatter は Biome、linter は ESLint の併用
+  - 依存: §9 スタイリング方式
+
+- [ ] **エラーメッセージの再採取**
+  - 現状: E-001〜004 は畳み込み（`... N more ...`）なし。union が浅いため
+  - 再採取のタイミング: 段階 3（polymorphic）で条件型が入ったとき / コンポーネント横断の共通型を `src/types/` に切り出したとき
+  - 比較対象: `docs/error-messages/button.md` の現在の記録
+
+- [ ] **内部型名 `IconButtonProps` の露出**（E-001 / E-002 の ○ → ◎ 課題）
+  - エラーが非 export の型名を名指しするため、利用者に照合先が無い
+  - union の分岐名の設計問題。段階 2・3 で型の構造が変わるので、今やると作り直しになる
+  - 判断時期: 段階 3 の後
+
+- [ ] **振る舞いテストの導入**
+  - `button.test.tsx` 未着手。jsdom / Testing Library / jest-axe が未導入、`vitest.config.ts` の `environment` も未設定
+  - 原則 4 の規約（`className` merge / `ref` / `data-*`）を実装してから書くと 1 回で済む
+  - 同時に CONCEPT.md §6 の a11y ゲートも埋まる
 
 ---
 
@@ -65,7 +130,47 @@
 
 型そのものではなく、「どう設計したか」の判断。却下案も残す。
 
-### D-000 | 判断のタイトル
+### D-003 | 判別子を `iconOnly: true` にする
+
+- **日付**: 2026-08-07
+- **論点**: アイコンのみのボタンをどの prop で判別するか。判別子の型は何にするか
+- **採用**: `iconOnly` という専用の prop を立て、型を `true` リテラルにする。アイコンボタンでない側は `iconOnly?: never`
+- **却下した案とその理由**:
+  - `variant: "iconOnly"` — 見た目の variant（`primary` / `secondary`）を同じ prop に入れると排他になり、**「primary なアイコンボタン」が表現できなくなる**。`variant` は見た目のために空けておく
+  - `variant?: "default"`（既定値をリテラルで持つ）— エラーメッセージに選択肢が並ぶ利点はあるが、`variant="default"` と省略という**同じ意味の書き方が 2 通り**生まれる。防げるバグが増えないので原則 6 で却下
+  - `iconOnly: boolean` — `false` がアイコンボタン側の分岐にマッチしてしまい、`iconOnly={false}` を書くと `aria-label` を要求される。`false` を排除したつもりが吸い込まれる
+  - `iconOnly?: false`（false を明示的に許す）— 「なくていいものを明示的に書く」ことになる。必要なときだけ足す prop という設計意図と合わない
+- **副作用**: `iconOnly={someBoolean}` と変数で渡す書き方が禁止される。条件で出し分けたい利用者は要素ごと分岐させる必要がある。この制約はエラーメッセージから読み取れず、docs の E-004 として △ 評価になっている
+- **`CONCEPT.md` のどの原則に基づくか**: 原則 1（不正な状態を表現不可能にする）、原則 6（防げるバグが実在しないなら削る）
+
+---
+
+### D-002 | package.json を 6 キーに絞る
+
+- **日付**: 2026-08-07
+- **論点**: ライブラリの `package.json` をどこまで書くか
+- **採用**: `name` / `version` / `private` / `type` / `scripts` / `devDependencies` の 6 キーのみ。`dist/` ができるまで配布設定を書かない
+- **却下した案とその理由**:
+  - `exports` / `files` / `sideEffects` を先に書く — 検証対象（`dist/`）が存在しない状態では `publint` も `@arethetypeswrong/cli` も回せず、正しさを確認できない
+  - `peerDependencies` を先に書く — `private: true` のパッケージに peer を書いても誰も読まない。React を peer にする理由（React はモジュールスコープに状態を持ち、2 つロードされると hooks と Context の同一性が壊れる）は理解した上で、記述は publish 準備時に行う
+  - `license` を決める — CONCEPT.md §9「OSS 公開するか」が未決。`private: true` で publish を物理的に塞いでおけば決定を先送りできる
+- **`CONCEPT.md` のどの原則に基づくか**: 原則 6（検証できないものを先に書かない）
+
+---
+
+### D-001 | tsconfig の厳格オプションを 3 つ有効化する
+
+- **日付**: 2026-08-07
+- **論点**: `strict` に加えて何を有効にするか
+- **採用**: `exactOptionalPropertyTypes` / `noUncheckedIndexedAccess` / `verbatimModuleSyntax` をすべて `true`
+- **理由**: `exactOptionalPropertyTypes` が排他 props の設計に直結する。オフにすると省略可の prop に `undefined` を明示的に渡せてしまい、**型で防げるはずのものが防げない**状態になる
+- **却下した案とその理由**:
+  - `exactOptionalPropertyTypes` をオフにする — 利用者が条件付きで prop を渡す書き方が楽になるが、原則 1 の前提が崩れる。実害が出たら「自前の省略可 props を `?: T | undefined` と明示する」で個別に対処する（積み残し参照）
+- **`CONCEPT.md` のどの原則に基づくか**: 原則 1
+
+---
+
+### D-000 | 判断のタイトル（テンプレート）
 
 - **日付**:
 - **論点**:
