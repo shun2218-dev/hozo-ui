@@ -248,7 +248,7 @@ Claude Code は `src/` への書き込み権限を持たない（`.claude/settin
 ## 9. 未決定事項
 
 - [x] ~~ライブラリ名~~ → **Hozo UI** / `hozo-ui`
-- [ ] スタイリング方式（CSS Modules / vanilla-extract / unstyled のみ） ← Button 着手前に決める
+- [x] ~~スタイリング方式~~ → **unstyled のみ**。CSS は同梱しない。掴む手段として `hozo-` 接頭辞のベースクラス（識別）と `data-*` 属性（状態）を公開する（LEARNING_LOG.md の D-006）
 - [ ] ドキュメントサイトの形式（Storybook / 自作）
 - [ ] ドメイン取得の要否
 - [ ] OSS として公開するか、ポートフォリオ限定か
