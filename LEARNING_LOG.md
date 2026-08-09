@@ -102,10 +102,23 @@
 - [x] ~~**`data-icon-only` を公開する設計の是非**~~ → 公開する。**D-006** に記録
 
 - [ ] **原則 4 の規約が未実装**（段階 2 の作業）
-  - `className` の merge — D-006 でベースクラスを付けると決めたので必須
-  - `ref` の転送 — React 19 なので `forwardRef` は不要。`ComponentPropsWithRef` で受けた `ref` を素通しできるか要確認
-  - 状態の `data-*` 公開 — `data-disabled` など。`data-icon-only` は実装済み
-  - 併せて: ベースクラス `hozo-button` の付与
+  - [x] ベースクラス `hozo-button` の付与
+  - [x] `className` の merge（`mergeClassNames`）
+  - [ ] `ref` の転送 — React 19 なので `forwardRef` は不要。`{...props}` で素通しされるはずだが未検証。jsdom を導入したので振る舞いのテストで確定させる
+  - [ ] 状態の `data-*` 公開 → 下の「`disabled` の表現方法」に依存するため保留
+
+- [ ] **`disabled` の表現方法**（段階 3 の設計に依存するため保留）
+  - **決めること**: ネイティブの `disabled` 属性を使うか、`aria-disabled` を使うか。**併用はしない**（WAI-ARIA 第一原則: ネイティブ属性で表現できるなら ARIA を足さない。両方書くと読み上げが二重になる実装がある）
+  - ネイティブ `disabled` の副作用: **フォーカスを受け取れなくなる**ため、スクリーンリーダー利用者がボタンの存在に気づけない。「なぜ無効か」を説明する tooltip にも到達できない
+  - `aria-disabled` を選ぶ場合: フォーカス可能なまま残るので、**クリック時の処理を自前で止める**必要がある
+  - **段階 3 が効く理由**: `<Button as="a">` の DOM は `<a>` で、**`disabled` 属性が存在しない**。polymorphic にした時点でネイティブ属性に依存した設計が破綻する。要素ごとに出し分けるか、最初から `aria-disabled` に統一するか
+  - **`data-disabled` は不要になる可能性が高い**: ネイティブなら `:disabled` 疑似クラス、ARIA なら `[aria-disabled="true"]` で CSS から掴める。D-006 で「状態は `data-*`」と決めたが、**ネイティブに対応する表現がある状態は例外**。`data-*` が要るのは `open` / `selected` / `pressed` のように標準の表現手段が無いもの
+  - 判断時期: 段階 3（polymorphic）の設計と同時
+
+- [ ] **`data-icon-only` を利用者が上書きできるか**
+  - 現状の [button.tsx](src/components/button/button.tsx) は `{...props}` を先に展開し、内部の属性を後ろに置いているので**内部が勝つ**
+  - D-006 で公開 API と決めた属性を、利用者が直接書き換えられるべきかは未決
+  - 同じ判断が `className` にも適用されるが、そちらは merge しているので上書きではなく結合になっている
 
 - [ ] **`variant`（見た目）を入れるときの設計**
   - `iconOnly` を独立した prop にしたので `variant` は空いている。フェーズ 3 の variant システムで使う
