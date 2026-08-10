@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 /** アイコンのみのボタン */
 type IconButtonProps = {
@@ -53,4 +53,4 @@ type BaseButtonProps = {
  * </Button>
  * ```
  */
-export type ButtonProps = ComponentPropsWithRef<"button"> & (IconButtonProps | BaseButtonProps)
+export type ButtonProps = IconButtonProps | BaseButtonProps

@@ -1,7 +1,8 @@
 import { describe, expectTypeOf, test } from "vitest";
 import { Button } from "./button";
-import type { ComponentPropsWithRef, ReactNode } from "react";
-import type { ButtonProps } from "./button.types";
+import type { ComponentProps, ComponentPropsWithRef, ReactNode } from "react";
+
+type ButtonProps = ComponentProps<typeof Button>
 
 describe("ButtonProps", () => {
     test("通常ボタンは children があれば書ける", () => {
@@ -57,5 +58,19 @@ describe("ButtonProps(JSX)", () => {
 
     test("iconOnly が書ける", () => {
         return <Button iconOnly aria-label="アイコンボタン">ボタン</Button>
+    })
+
+    test("as='a' iconOnly で aria-label を省略するとエラーになる", () => {
+        // @ts-expect-error iconOnly では aria-label が必須のため
+        return <Button as="a" iconOnly>ボタン</Button>
+    })
+
+    test("as='a' にすると href が書ける", () => {
+        return <Button as="a" href="/">ボタンリンク</Button>
+    })
+
+    test("as を省略して href を書くとエラーになる", () => {
+        // @ts-expect-error as を省略すると E が "button" に確定するので href を受け取れないため
+        return <Button href="/">ボタン</Button>
     })
 })

@@ -6,7 +6,6 @@ import { createRef } from "react";
 const DEFAULT_CLASSNAME = "hozo-button";
 
 describe("Button", () => {
-
     describe("props の転送", () => {
         test("ref が DOM 要素に転送される", () => {
             const ref = createRef<HTMLButtonElement>();
@@ -46,7 +45,6 @@ describe("Button", () => {
     })
 
     describe("data 属性", () => {
-
         test("iconOnly を指定すると data-icon-only が付与される", () => {
             render(<Button iconOnly aria-label="アイコンボタン">ボタン</Button>)
 
@@ -57,6 +55,26 @@ describe("Button", () => {
             render(<Button>ボタン</Button>)
 
             expect(screen.getByRole("button").hasAttribute("data-icon-only")).toBe(false)
+        })
+    })
+
+    describe("as", () => {
+        test("as='a' を渡すと <a> がレンダリングされる", () => {
+            render(<Button as="a" href="/">ボタンリンク</Button>)
+
+            expect(screen.getByRole("link").tagName).toBe("A")
+        })
+
+        test("as を省略すると <button> がレンダリングされる", () => {
+            render(<Button>ボタン</Button>)
+
+            expect(screen.getByRole("button").tagName).toBe("BUTTON")
+        })
+
+        test("as が DOM 属性として出力されない", () => {
+            render(<Button as="a" href="/">ボタン</Button>)
+
+            expect(screen.getByRole("link").hasAttribute("as")).toBe(false)
         })
     })
 })
