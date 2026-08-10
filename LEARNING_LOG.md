@@ -43,6 +43,7 @@
 
 | ID | トピック | 対象 | Lv | 到達 | 日付 |
 |---|---|---|---|---|---|
+| L-002 | Polymorphic component（`as` prop） | Button | 2 | ○ | 2026-08-07 |
 | L-001 | 排他的 props（discriminated union） | Button | 1 | ○ | 2026-08-07 |
 
 ---
@@ -50,6 +51,30 @@
 ## 記録
 
 <!-- 新しい記録を上に追加していく -->
+
+### L-002 | Polymorphic component（`as` prop）
+
+- **日付**: 2026-08-07
+- **対象**: Button / `src/types/polymorphic.ts`
+- **Lv**: 2
+- **到達**: ○
+- **使った道具**: `ElementType` / `ComponentPropsWithRef<E>` / `Omit<T, keyof OwnProps | "as">` / ジェネリック関数コンポーネント / 型引数の既定値（`E extends ElementType = "button"`）
+- **詰まった点**:
+  - `Omit` の第 2 引数に何を入れるか分からなかった。`as` が `LinkHTMLAttributes`（`<link as="style">`）と衝突する。衝突するのは 1 要素だけだが、汎用型なので `Omit` する判断をした
+  - 自前 props をどう渡すか。型引数を 2 つにする（`<E, OwnProps>`）ことで解決
+  - **`as` の渡し方が分からなかった。** Vue の `<component :is>` に相当する専用の仕組みは React に無く、JSX の要素位置に「大文字始まりの変数」を置くだけ
+  - 型を先に作ったが**実装が追従しておらず**、`<Button as="a">` が型は通るのに `<button>` を描画していた。さらに `as` を分割代入し忘れて `<button as="a">` として DOM に漏れていた
+  - `ButtonProps` の意味が変わった（コンポーネントが受け取る props 全体 → 自前 props だけ）ことで、既存の `keyof` 回帰テストが落ちた。回帰ではなく仕様変更
+- **解決の鍵**:
+  - **既定値は型と実装の両方に必要**。型引数の `= "button"` は型の話で、実行時の値は `?? "button"` で別に与えないと決まらない
+  - **既定値は「推論できなかったとき」にしか使われない**。`as` を書けばそこから `E` が推論され、書かなければ既定値に落ちる。だから「`as` を省略したとき」の検証は JSX でしか書けない
+  - **層で責務を分ける**。`PolymorphicProps` に既定値は置かず、コンポーネント側の型引数に置いた。汎用型のテストも `ButtonProps` ではなくダミー型を使い、Button に依存させない
+  - 予想が外れた点: `keyof OwnProps` が union で共通キーしか返さないため `"aria-label"` が `Omit` されず壊れると予想したが、**`(A | B) & X` が分岐ごとに分配される**ので実害は無かった
+  - **エラーメッセージは崩壊しなかった。** 崩壊させるのは条件型による展開であって、交差型やジェネリックそのものではない（CONCEPT.md 7 節の罠 1 の再評価）
+- **一言で説明すると**: `as`を含む汎用型では、`E extends ElementType`の`E`を`omponentPropsWithRef<E>`で渡し、コンポーネント側では`E extends ElementType = "button"`で既定値を設定するが、既定値は推論ができなかった時にしか使用されない。また、型引数の既定値は型情報のため、`const Component = as ?? "button"`のように補う必要がある。
+- **関連**: L-001 / D-006 / [docs/error-messages/button.md](docs/error-messages/button.md)
+
+---
 
 ### L-001 | 排他的 props（discriminated union）
 
