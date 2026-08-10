@@ -101,10 +101,12 @@
 
 - [x] ~~**`data-icon-only` を公開する設計の是非**~~ → 公開する。**D-006** に記録
 
-- [ ] **原則 4 の規約が未実装**（段階 2 の作業）
+- [ ] **原則 4 の規約**（段階 2〜3 の作業）
   - [x] ベースクラス `hozo-button` の付与
   - [x] `className` の merge（`mergeClassNames`）
-  - [ ] `ref` の転送 — React 19 なので `forwardRef` は不要。`{...props}` で素通しされるはずだが未検証。jsdom を導入したので振る舞いのテストで確定させる
+  - [x] `ref` の転送 — React 19 なので `forwardRef` 不要。`{...props}` で素通しされることを振る舞いテストで確認。`{...props}` を落とす変異で赤くなることも確認済み
+  - [x] `as` で要素を差し替え（`PolymorphicProps`）
+  - [ ] **`ref` の型が `as` に追従しない** — `createRef<HTMLButtonElement>` 固定でしかテストしていない。`as="a"` のとき `HTMLAnchorElement` になるべきだが未検証・未対応。`PolymorphicRef<E>` 相当を汎用型に足すかの判断が要る
   - [ ] 状態の `data-*` 公開 → 下の「`disabled` の表現方法」に依存するため保留
 
 - [ ] **`disabled` の表現方法**（段階 3 の設計に依存するため保留）
@@ -136,15 +138,13 @@
   - ありうる構成: formatter は Biome、linter は ESLint の併用
   - 依存: §9 スタイリング方式
 
-- [ ] **エラーメッセージの再採取**
-  - 現状: E-001〜004 は畳み込み（`... N more ...`）なし。union が浅いため
-  - 再採取のタイミング: 段階 3（polymorphic）で条件型が入ったとき / コンポーネント横断の共通型を `src/types/` に切り出したとき
-  - 比較対象: `docs/error-messages/button.md` の現在の記録
+- [x] ~~**エラーメッセージの再採取**~~ → polymorphic 導入後に実施。**崩壊しなかった**。変わったのは型名の表示（`ButtonProps` → `PolymorphicProps<"button", ButtonProps>`）だけで、行数も畳み込みの有無も変化なし。`PolymorphicProps` が交差型と `Omit` だけで条件型を使っていないため。**崩壊させるのは条件型による展開であって、ジェネリックや交差型そのものではない**（docs/error-messages/button.md の「再採取の記録」）。条件型を入れたら再々採取する
 
-- [ ] **振る舞いテストの導入**
-  - `button.test.tsx` 未着手。jsdom / Testing Library / jest-axe が未導入、`vitest.config.ts` の `environment` も未設定
-  - 原則 4 の規約（`className` merge / `ref` / `data-*`）を実装してから書くと 1 回で済む
-  - 同時に CONCEPT.md §6 の a11y ゲートも埋まる
+- [x] ~~**振る舞いテストの導入**~~ → jsdom / Testing Library を導入し `button.test.tsx` を作成（16 tests）
+
+- [ ] **`jest-axe` の導入**（CONCEPT.md 6 節の a11y ゲート）
+  - 未導入。`disabled` の表現方法が決まらないと、書くべきテストが確定しない
+  - `as="a"` のときのロールが `link` に変わるので、**polymorphic と a11y の相互作用**も検証対象になる
 
 ---
 

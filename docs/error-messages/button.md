@@ -1,10 +1,24 @@
 # Button のエラーメッセージ
 
-対象の型: [`src/components/button/button.types.ts`](../../src/components/button/button.types.ts)
+対象の型: [`src/components/button/button.types.ts`](../../src/components/button/button.types.ts) / [`src/types/polymorphic.ts`](../../src/types/polymorphic.ts)
 
 書き方は [README.md](./README.md) を参照。
 
-採取条件: `npx tsc --noEmit --pretty false`。E-001〜004 は `--noErrorTruncation` を付けても**出力が完全に同じ**だった（畳み込みが発生していない）。判別子が浅い union なので型が畳まれるほど大きくならない。段階 3（polymorphic）で条件型が入ったら再採取する。
+採取条件: `npx tsc --noEmit --pretty false`。E-001〜006 は `--noErrorTruncation` を付けても**出力が完全に同じ**（畳み込みが発生していない）。
+
+## 再採取の記録
+
+**polymorphic（`as` prop）の導入後に E-001〜004 を採り直した。結果は「ほぼ変化なし」。**
+
+CONCEPT.md 7 節の「既知の罠 1 — エラーメッセージの崩壊」は、**現時点では起きていない**。
+
+- 変わったのは型名の表示だけ。`ButtonProps` → `PolymorphicProps<"button", ButtonProps>`
+- 行数、畳み込みの有無、読みやすさはいずれも変化なし
+- 崩壊しなかった理由の推測: `PolymorphicProps` は交差型と `Omit` だけで構成され、**条件型を使っていない**。tsc は `Omit` の結果を展開せず型名のまま表示するため、union の分岐数も文字数も増えなかった
+
+`expect-type` が R-001 で崩壊したのは条件型を多用しているためで、**「型を複雑にすると必ず崩壊する」わけではない**。崩壊させるのは条件型による展開であって、交差型やジェネリックそのものではない。
+
+再々採取のタイミング: 条件型（`E extends "a" ? ... : ...` の形）を型に入れたとき。
 
 ---
 
@@ -21,13 +35,13 @@
 **エラー全文**
 
 ```
-error TS2322: Type '{ children: string; iconOnly: true; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+error TS2322: Type '{ children: string; iconOnly: true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
   Property '"aria-label"' is missing in type '{ children: string; iconOnly: true; }' but required in type 'IconButtonProps'.
 ```
 
 - **行数**: 2
 - **読めるか**: ○
-- **利用者は原因に辿り着けるか**: 辿り着ける。2 行目に `Property '"aria-label"' is missing` と欠けている prop 名が出る。ただし摩擦が 2 つある。(1) 1 行目の `IntrinsicAttributes & ButtonProps` は情報量ゼロで、読み飛ばす必要がある。(2) `IconButtonProps` は **export していない内部の型名**で、利用者が照合できる先が存在しない
+- **利用者は原因に辿り着けるか**: 辿り着ける。2 行目に `Property '"aria-label"' is missing` と欠けている prop 名が出る。ただし摩擦が 2 つある。(1) 1 行目の `IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>` は情報量ゼロで、読み飛ばす必要がある（polymorphic 導入で表示は長くなったが、読み飛ばす対象である点は変わらない）。(2) `IconButtonProps` は **export していない内部の型名**で、利用者が照合できる先が存在しない
 - **改善案**: 「なぜ必須なのか」（= `iconOnly` を書いたから）がメッセージのどこにも無い。`iconOnly: true` は再掲されているので推測は可能だが、明示されてはいない。分岐の型名を利用者に意味が通る名前にするか、ヒント型を混ぜて理由を載せる余地がある。ただし現状でも直し方には到達できるので、優先度は中
 
 ---
@@ -43,7 +57,7 @@ error TS2322: Type '{ children: string; iconOnly: true; }' is not assignable to 
 **エラー全文**
 
 ```
-error TS2322: Type '{ iconOnly: true; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+error TS2322: Type '{ iconOnly: true; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
   Property 'children' is missing in type '{ iconOnly: true; "aria-label": string; }' but required in type 'IconButtonProps'.
 ```
 
@@ -110,6 +124,54 @@ error TS2322: Type 'boolean' is not assignable to type 'true'.
   **試したこと**: ヒント型（改善案 (2)）を実装した。E-003 と同じ文言がこの行にも出るようになったが、**変数を渡した利用者に必要な助言は「省略しろ」ではなく「要素ごと分岐しろ」**であり、内容が合わなかった。ヒントを置けるのが `false` の分岐だけなので、`boolean` を渡したケースだけ別の文を出すことはできない。**構造上の限界**（D-004）。
   **現状の結論**: エラーメッセージ側での改善を断念し、JSDoc に移した（D-005）。`iconOnly` にホバーすると、条件で出し分けるときの正しい書き方が `@example` として出る。**ただしこれはエラーを見た後に自分でホバーしに行った利用者にしか届かない。** エラーメッセージ単体の評価は △ のまま
   **残る選択肢**: (1) 設計を変えて `boolean` を許す — `false` のとき `aria-label` 必須をどう解除するかという別問題が出る。(3) ドキュメントで示す — 型で防ぐという主張からは後退。段階 3 の後に型サイズを実測し、畳み込みが起きないならヒント型を再検討する
+
+---
+
+### E-005 | `as` を省略してその要素に無い属性を書く
+
+polymorphic 導入で新たに発生するようになった誤り。`as` を書き忘れて `<a>` のつもりで `href` を渡すケース。
+
+**書いたコード**
+
+```tsx
+<Button href="/x">text</Button>
+```
+
+**エラー全文**
+
+```
+error TS2322: Type '{ children: string; href: string; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
+  Property 'href' does not exist on type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'. Did you mean 'ref'?
+```
+
+- **行数**: 2
+- **読めるか**: ○
+- **利用者は原因に辿り着けるか**: 辿り着ける。`PolymorphicProps<"button", ...>` の **`"button"` の部分が、`as` を省略した結果として型引数に現れている**ため、「今は button として扱われている」ことが読み取れる。型引数が表示に出ることが、ここでは利点になっている
+- **観察**: `Did you mean 'ref'?` は tsc の類似名サジェストで、**この文脈では誤誘導**。`href` と `ref` は無関係。ライブラリ側では制御できない
+- **改善案**: 特になし。優先度低
+
+---
+
+### E-006 | `as` で変えた要素に無い属性を書く
+
+**書いたコード**
+
+```tsx
+<Button as="a" href="/x" disabled>text</Button>
+```
+
+**エラー全文**
+
+```
+error TS2322: Type '{ children: string; as: "a"; href: string; disabled: true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
+```
+
+- **行数**: 2
+- **読めるか**: ○
+- **利用者は原因に辿り着けるか**: 辿り着ける。型引数が `"a"` になっているので、`as` の指定と対応づけられる。**polymorphic が型として機能していることの証拠でもある**
+- **観察**: このエラーは積み残しの「`disabled` の表現方法」と直結する。`as="a"` では `disabled` を渡せないため、無効状態を `disabled` 属性で表現する設計は polymorphic と両立しない
+- **改善案**: 特になし。優先度低
 
 ---
 
