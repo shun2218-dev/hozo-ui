@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 import type { PolymorphicProps } from "./polymorphic";
+import type { Ref } from "react";
 
 type OwnProps = { variant: string }
 
@@ -16,5 +17,13 @@ describe("PolymorphicProps", () => {
 
     test("OwnProps のキーが要素側と衝突したら OwnProps が勝つ", () => {
         expectTypeOf<PolymorphicProps<"button", CollisionOwnProps>["className"]>().toEqualTypeOf<CollisionOwnProps["className"]>()
+    })
+
+    test("E が 'a' のとき ref が HTMLAnchorElement になる", () => {
+        expectTypeOf<PolymorphicProps<"a", OwnProps>["ref"]>().toEqualTypeOf<Ref<HTMLAnchorElement> | undefined>()
+    })
+
+    test("E が 'button' のとき ref が HTMLButtonElement になる", () => {
+        expectTypeOf<PolymorphicProps<"button", OwnProps>["ref"]>().toEqualTypeOf<Ref<HTMLButtonElement> | undefined>()
     })
 })

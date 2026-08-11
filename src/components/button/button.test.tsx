@@ -76,5 +76,13 @@ describe("Button", () => {
 
             expect(screen.getByRole("link").hasAttribute("as")).toBe(false)
         })
+
+        test("as='a' のとき ref.current に <a> が入る", () => {
+            const ref = createRef<HTMLAnchorElement>()
+
+            render(<Button as="a" href="/" ref={ref}>ボタンリンク</Button>)
+
+            expect(ref.current?.tagName).toBe("A")
+        })
     })
 })

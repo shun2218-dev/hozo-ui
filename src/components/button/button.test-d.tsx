@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 import { Button } from "./button";
-import type { ComponentProps, ComponentPropsWithRef, ReactNode } from "react";
+import { createRef, type ComponentProps, type ComponentPropsWithRef, type ReactNode } from "react";
 
 type ButtonProps = ComponentProps<typeof Button>
 
@@ -72,5 +72,17 @@ describe("ButtonProps(JSX)", () => {
     test("as を省略して href を書くとエラーになる", () => {
         // @ts-expect-error as を省略すると E が "button" に確定するので href を受け取れないため
         return <Button href="/">ボタン</Button>
+    })
+
+    test("as 省略に anchor 用 ref を渡すとエラー", () => {
+        const anchorRef = createRef<HTMLAnchorElement>()
+        // @ts-expect-error as を省略すると E が "button" に確定するのに ref が anchor 用のため
+        return <Button href="/" ref={anchorRef}>ボタンリンク</Button>
+    })
+
+    test("as='a' に button 用 ref を渡すとエラー", () => {
+        const buttonRef = createRef<HTMLButtonElement>()
+        // @ts-expect-error as="a" で ref が button 用のため
+        return <Button as="a" ref={buttonRef}>ボタン</Button>
     })
 })
