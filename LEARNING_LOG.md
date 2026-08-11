@@ -131,16 +131,24 @@
   - [x] `className` の merge（`mergeClassNames`）
   - [x] `ref` の転送 — React 19 なので `forwardRef` 不要。`{...props}` で素通しされることを振る舞いテストで確認。`{...props}` を落とす変異で赤くなることも確認済み
   - [x] `as` で要素を差し替え（`PolymorphicProps`）
-  - [ ] **`ref` の型が `as` に追従しない** — `createRef<HTMLButtonElement>` 固定でしかテストしていない。`as="a"` のとき `HTMLAnchorElement` になるべきだが未検証・未対応。`PolymorphicRef<E>` 相当を汎用型に足すかの判断が要る
-  - [ ] 状態の `data-*` 公開 → 下の「`disabled` の表現方法」に依存するため保留
+  - [x] **`ref` の型が `as` に追従する** — 一度「未対応」と記録したが**誤り**。実測したところ `ComponentPropsWithRef<E>` を使った時点で `ref?: Ref<E に対応する要素>` が入るため、最初から追従していた。**`PolymorphicRef<E>` のような追加の型は不要**。足りなかったのはテストだけで、型テスト 3 本・振る舞い 1 本を追加して固定した。変異（`ComponentPropsWithRef` → `ComponentPropsWithoutRef`）で `["ref"]` のインデックスアクセス自体が落ちることも確認済み
+  - [ ] 状態の `data-*` 公開 → `disabled` は `aria-disabled` で表現すると決めたため `data-disabled` は出さない。他に公開すべき状態が出てくるまで作業なし
 
-- [ ] **`disabled` の表現方法**（段階 3 の設計に依存するため保留）
-  - **決めること**: ネイティブの `disabled` 属性を使うか、`aria-disabled` を使うか。**併用はしない**（WAI-ARIA 第一原則: ネイティブ属性で表現できるなら ARIA を足さない。両方書くと読み上げが二重になる実装がある）
+- [ ] **`disabled` の表現方法**（次の作業。別ブランチで進める）
+  - **方針は決まった**: `aria-disabled` を使う。ネイティブの `disabled` 属性は使わない。**併用もしない**（WAI-ARIA 第一原則: ネイティブ属性で表現できるなら ARIA を足さない。両方書くと読み上げが二重になる実装がある）
+  - **決め手**: `<Button as="a">` の DOM は `<a>` で **`disabled` 属性が存在しない**（docs の E-006 で実測）。polymorphic にした時点で、ネイティブ属性に依存した設計は要素によって成立したりしなかったりする
   - ネイティブ `disabled` の副作用: **フォーカスを受け取れなくなる**ため、スクリーンリーダー利用者がボタンの存在に気づけない。「なぜ無効か」を説明する tooltip にも到達できない
-  - `aria-disabled` を選ぶ場合: フォーカス可能なまま残るので、**クリック時の処理を自前で止める**必要がある
-  - **段階 3 が効く理由**: `<Button as="a">` の DOM は `<a>` で、**`disabled` 属性が存在しない**。polymorphic にした時点でネイティブ属性に依存した設計が破綻する。要素ごとに出し分けるか、最初から `aria-disabled` に統一するか
-  - **`data-disabled` は不要になる可能性が高い**: ネイティブなら `:disabled` 疑似クラス、ARIA なら `[aria-disabled="true"]` で CSS から掴める。D-006 で「状態は `data-*`」と決めたが、**ネイティブに対応する表現がある状態は例外**。`data-*` が要るのは `open` / `selected` / `pressed` のように標準の表現手段が無いもの
-  - 判断時期: 段階 3（polymorphic）の設計と同時
+  - **「何もしない」は選べない**: 現状 `<Button aria-disabled>` が書けてしまい、支援技術には無効と伝わるのに `onClick` は普通に発火する。**意味論と挙動が食い違う状態**で、原則 1 が表現不可能にすべきと言っているもの。ARIA は意味論を伝えるだけで挙動を変えない
+  - **実装の本体は「起動を止める」こと**:
+    - クリックとキーボードの両方を塞ぐ必要がある
+    - **キーボードの起動経路が要素ごとに違う**。`<button>` は Enter と Space、`<a href>` は Enter のみ
+    - `<a href>` はクリックでブラウザがネイティブに遷移するため、`onClick` を呼ばないだけでは足りず **`preventDefault` が要る**
+  - **着手前に決める 3 点**:
+    1. 利用者に `aria-disabled` を直接書かせるか、`PolymorphicProps` の `Omit` で塞いで自前の `disabled` だけを入口にするか（`as` を `Omit` したのと同じ判断）
+    2. `as="a"` で無効のとき `href` をどうするか。**外すとフォーカスも失う**（`<a>` は `href` が無いとフォーカス不可）ので、`aria-disabled` を選んだ意味が消える
+    3. `onClick` を呼ばないだけにするか、`preventDefault` まで面倒を見るか
+  - **`data-disabled` は出さない**: D-006 の基準（`data-*` はネイティブに表現手段が無い状態のためのもの）に照らすと、`[aria-disabled="true"]` で CSS から掴めるので不要
+  - 決まったら D-007 として記録する。特に 3 は**理由が実装から読み取れない**
 
 - [ ] **`data-*` のセレクタをドキュメントに書く**
   - D-006 で「存在で契約する」と決めたので、`[data-icon-only]` という書き方を利用者に示す必要がある
