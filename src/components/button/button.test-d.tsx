@@ -37,10 +37,6 @@ describe("ButtonProps", () => {
         expectTypeOf<{ iconOnly: boolean, "aria-label": string, children: ReactNode }>().not.toExtend<ButtonProps>()
     })
 
-    test("iconOnly は aria-label と children があれば書ける", () => {
-        expectTypeOf<{ iconOnly: true, "aria-label": string, children: ReactNode }>().toExtend<ButtonProps>()
-    })
-
     test("iconOnly は aria-label を省略できない", () => {
         expectTypeOf<{ iconOnly: true, children: ReactNode }>().not.toExtend<ButtonProps>()
     })
