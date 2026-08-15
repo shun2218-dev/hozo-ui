@@ -25,6 +25,21 @@ type IconButtonProps = {
     "aria-label": string
     /** アイコン要素を渡す */
     children: ReactNode
+    /**
+     * ネイティブの `disabled` 属性ではなく `aria-disabled` で表現する。
+     * フォーカスは受け取れるまま残るため、支援技術の利用者もボタンの存在に気づける。
+     *
+     * `as="a"` のときは `href` を外し、`role` と `tabIndex` を補う。
+     * リンクとしての遷移が起きなくなる。
+     *
+     * `as` に関数コンポーネントを渡した場合、この処理は働かない（`href` が残る）。
+     *
+     * @example
+     * 送信中だけ無効にする
+     * ```tsx
+     * <Button disabled={isSubmitting}>送信する</Button>
+     * ```
+     */
     disabled?: boolean
 }
 
@@ -34,6 +49,21 @@ type BaseButtonProps = {
     iconOnly?: never
     /** ボタンのラベル文字列 */
     children: ReactNode
+    /**
+     * ネイティブの `disabled` 属性ではなく `aria-disabled` で表現する。
+     * フォーカスは受け取れるまま残るため、支援技術の利用者もボタンの存在に気づける。
+     *
+     * `as="a"` のときは `href` を外し、`role` と `tabIndex` を補う。
+     * リンクとしての遷移が起きなくなる。
+     *
+     * `as` に関数コンポーネントを渡した場合、この処理は働かない（`href` が残る）。
+     *
+     * @example
+     * 送信中だけ無効にする
+     * ```tsx
+     * <Button disabled={isSubmitting}>送信する</Button>
+     * ```
+     */
     disabled?: boolean
 }
 
