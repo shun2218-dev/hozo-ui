@@ -157,21 +157,26 @@ error TS2322: Type '{ children: string; href: string; }' is not assignable to ty
 **書いたコード**
 
 ```tsx
-<Button as="a" href="/x" disabled>text</Button>
+<Button as="a" href="/x" formAction="/y">text</Button>
 ```
 
 **エラー全文**
 
 ```
-error TS2322: Type '{ children: string; as: "a"; href: string; disabled: true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
-  Property 'disabled' does not exist on type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
+error TS2322: Type '{ children: string; as: "a"; href: string; formAction: string; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
+  Property 'formAction' does not exist on type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
 ```
 
 - **行数**: 2
 - **読めるか**: ○
 - **利用者は原因に辿り着けるか**: 辿り着ける。型引数が `"a"` になっているので、`as` の指定と対応づけられる。**polymorphic が型として機能していることの証拠でもある**
-- **観察**: このエラーは積み残しの「`disabled` の表現方法」と直結する。`as="a"` では `disabled` を渡せないため、無効状態を `disabled` 属性で表現する設計は polymorphic と両立しない
 - **改善案**: 特になし。優先度低
+
+**採取例を差し替えた経緯**: 当初は `<Button as="a" href="/x" disabled>` を例にしていた。当時は `disabled` が `<button>` 固有の属性だったためエラーになり、「`as="a"` では `disabled` を渡せないので、無効状態を `disabled` 属性で表現する設計は polymorphic と両立しない」という観察の根拠になっていた。
+
+その後 D-007 で **`disabled` を自前 prop にした**ため、`as` が何であっても受け取れるようになり**このコードはエラーにならなくなった**。同じ「要素に無い属性」を示す例として `formAction`（`<button>` 固有で `<a>` に無い）に差し替えている。
+
+元の観察自体は D-007 の判断根拠として生きているが、**エラーとしては再現しない**。
 
 ---
 
