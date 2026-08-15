@@ -44,6 +44,10 @@ describe("ButtonProps", () => {
     test("disabled を受け取れる", () => {
         expectTypeOf<{ disabled: boolean, children: ReactNode }>().toExtend<ButtonProps>()
     })
+
+    test("iconOnly と disabled を同時に受け取れる", () => {
+        expectTypeOf<{ iconOnly: true, "aria-label": string, disabled: boolean, children: ReactNode }>().toExtend<ButtonProps>()
+    })
 })
 
 describe("ButtonProps(JSX)", () => {
