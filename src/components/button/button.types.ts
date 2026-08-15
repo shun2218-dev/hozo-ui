@@ -25,6 +25,7 @@ type IconButtonProps = {
     "aria-label": string
     /** アイコン要素を渡す */
     children: ReactNode
+    disabled?: boolean
 }
 
 /** 通常のテキストボタン */
@@ -33,6 +34,7 @@ type BaseButtonProps = {
     iconOnly?: never
     /** ボタンのラベル文字列 */
     children: ReactNode
+    disabled?: boolean
 }
 
 /**

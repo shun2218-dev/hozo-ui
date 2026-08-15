@@ -40,6 +40,10 @@ describe("ButtonProps", () => {
     test("iconOnly は aria-label を省略できない", () => {
         expectTypeOf<{ iconOnly: true, children: ReactNode }>().not.toExtend<ButtonProps>()
     })
+
+    test("disabled を受け取れる", () => {
+        expectTypeOf<{ disabled: boolean, children: ReactNode }>().toExtend<ButtonProps>()
+    })
 })
 
 describe("ButtonProps(JSX)", () => {
@@ -80,5 +84,9 @@ describe("ButtonProps(JSX)", () => {
         const buttonRef = createRef<HTMLButtonElement>()
         // @ts-expect-error as="a" で ref が button 用のため
         return <Button as="a" ref={buttonRef}>ボタン</Button>
+    })
+
+    test("as='a' でも disabled を受け取れる", () => {
+        return <Button as="a" href="/" disabled>ボタン</Button>
     })
 })

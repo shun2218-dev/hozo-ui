@@ -85,4 +85,63 @@ describe("Button", () => {
             expect(ref.current?.tagName).toBe("A")
         })
     })
+
+    describe("disabled", () => {
+        test("disabled のとき aria-disabled が付く", () => {
+            render(<Button as="a" href="/" disabled>ボタンリンク</Button>)
+
+            expect(screen.getByRole("link").hasAttribute("aria-disabled")).toBe(true)
+        })
+
+        test("disabled でないとき aria-disabled が付かない", () => {
+            render(<Button as="a" href="/">ボタンリンク</Button>)
+
+            expect(screen.getByRole("link").hasAttribute("aria-disabled")).toBe(false)
+        })
+
+        test("as 省略時に href / role / tabIndex が付かない", () => {
+            render(<Button>ボタン</Button>)
+
+            expect(screen.getByRole("button").hasAttribute("href")).toBe(false)
+            expect(screen.getByRole("button").hasAttribute("role")).toBe(false)
+            expect(screen.getByRole("button").hasAttribute("tabIndex")).toBe(false)
+        })
+
+        test("利用者の tabIndex を上書きする", () => {
+            const USER_TABINDEX = 5
+            render(<Button as="a" tabIndex={USER_TABINDEX} href="/" disabled>ボタン</Button>)
+
+            expect(screen.getByRole("link").getAttribute("tabindex")).not.toBe(String(USER_TABINDEX))
+        })
+
+        test("disabled のとき role='link' が付く", () => {
+            render(<Button as="a" href="/" disabled>ボタンリンク</Button>)
+
+            expect(screen.getByRole("link").getAttribute("role")).toEqual("link")
+        })
+
+        test("disabled のとき href が出力されない", () => {
+            render(<Button as="a" href="/" disabled>ボタンリンク</Button>)
+
+            expect(screen.getByRole("link").hasAttribute("href")).toBe(false)
+        })
+
+        test("disabled のとき tabIndex が付く", () => {
+            render(<Button as="a" href="/" disabled>ボタンリンク</Button>)
+
+            expect(screen.getByRole("link").hasAttribute("tabIndex")).toBe(true)
+        })
+
+        test("disabled のとき onClick が呼ばれない", () => {
+            const handleClick = vi.fn()
+
+            render(<Button onClick={handleClick} disabled>ボタン</Button>)
+
+            const button = screen.getByRole("button")
+
+            fireEvent.click(button);
+
+            expect(handleClick).toHaveBeenCalledTimes(0);
+        })
+    })
 })
