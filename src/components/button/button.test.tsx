@@ -104,7 +104,7 @@ describe("Button", () => {
 
             expect(screen.getByRole("button").hasAttribute("href")).toBe(false)
             expect(screen.getByRole("button").hasAttribute("role")).toBe(false)
-            expect(screen.getByRole("button").hasAttribute("tabIndex")).toBe(false)
+            expect(screen.getByRole("button").hasAttribute("tabindex")).toBe(false)
         })
 
         test("利用者の tabIndex を上書きする", () => {
@@ -129,7 +129,7 @@ describe("Button", () => {
         test("disabled のとき tabIndex が付く", () => {
             render(<Button as="a" href="/" disabled>ボタンリンク</Button>)
 
-            expect(screen.getByRole("link").hasAttribute("tabIndex")).toBe(true)
+            expect(screen.getByRole("link").hasAttribute("tabindex")).toBe(true)
         })
 
         test("disabled のとき onClick が呼ばれない", () => {
