@@ -1,3 +1,4 @@
+import axe from "axe-core";
 import { describe, expect, test, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Button } from "./button";
@@ -173,6 +174,34 @@ describe("Button", () => {
 
             expect(screen.getByRole("button").hasAttribute("data-icon-only")).toBe(true)
             expect(screen.getByRole("button").hasAttribute("aria-disabled")).toBe(true)
+        })
+    })
+
+
+    describe("アクセシビリティ", () => {
+        const DEFAULT_OPTION = { rules: { "color-contrast": { enabled: false } } }
+        test("通常のボタンに違反が無い", async () => {
+            const { container } = render(<Button>ボタン</Button>)
+
+            const results = await axe.run(container, DEFAULT_OPTION)
+
+            expect(results.violations).toEqual([])
+        })
+
+        test("iconOnly + aria-label に違反が無い", async () => {
+            const { container } = render(<Button iconOnly aria-label="アイコンボタン"><svg aria-hidden="true" /></Button>)
+
+            const results = await axe.run(container, DEFAULT_OPTION)
+
+            expect(results.violations).toEqual([])
+        })
+
+        test("as='a' + disabled に違反が無い", async () => {
+            const { container } = render(<Button as="a" href="/" disabled>ボタンリンク</Button>)
+
+            const results = await axe.run(container, DEFAULT_OPTION)
+
+            expect(results.violations).toEqual([])
         })
     })
 })
