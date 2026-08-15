@@ -143,5 +143,17 @@ describe("Button", () => {
 
             expect(handleClick).toHaveBeenCalledTimes(0);
         })
+
+        test("as='a' かつ disabled のとき onClick が呼ばれない", () => {
+            const handleClick = vi.fn()
+
+            render(<Button as="a" href="/" onClick={handleClick} disabled>ボタンリンク</Button>)
+
+            const link = screen.getByRole("link")
+
+            fireEvent.click(link);
+
+            expect(handleClick).toHaveBeenCalledTimes(0);
+        })
     })
 })
