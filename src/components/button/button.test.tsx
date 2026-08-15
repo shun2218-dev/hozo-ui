@@ -155,5 +155,24 @@ describe("Button", () => {
 
             expect(handleClick).toHaveBeenCalledTimes(0);
         })
+
+        test("disabled のとき type='submit' でもフォームが送信されない", () => {
+            const handleSubmit = vi.fn()
+
+            render(<form onSubmit={handleSubmit}><Button type="submit" disabled>送信ボタン</Button></form>)
+
+            const button = screen.getByRole("button")
+
+            fireEvent.click(button);
+
+            expect(handleSubmit).toHaveBeenCalledTimes(0);
+        })
+
+        test("iconOnly と disabled を同時に受け取れる", () => {
+            render(<Button iconOnly aria-label="アイコンボタン" disabled>アイコンボタン</Button>)
+
+            expect(screen.getByRole("button").hasAttribute("data-icon-only")).toBe(true)
+            expect(screen.getByRole("button").hasAttribute("aria-disabled")).toBe(true)
+        })
     })
 })
