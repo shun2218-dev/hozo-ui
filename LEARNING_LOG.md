@@ -176,8 +176,23 @@
 - [x] ~~**振る舞いテストの導入**~~ → jsdom / Testing Library を導入し `button.test.tsx` を作成（16 tests）
 
 - [ ] **`jest-axe` の導入**（CONCEPT.md 6 節の a11y ゲート）
-  - 未導入。`disabled` の表現方法が決まらないと、書くべきテストが確定しない
-  - `as="a"` のときのロールが `link` に変わるので、**polymorphic と a11y の相互作用**も検証対象になる
+  - 未導入。`as="a"` のときのロールが `link` に変わるので、**polymorphic と a11y の相互作用**も検証対象になる
+
+- [ ] **ブラウザ環境でのテストを `@vitest/browser` で行う**（方針は決定。導入時期は未定）
+  - **決定**: 実ブラウザでのテストが要るようになったら `@vitest/browser` を使う。`@testing-library/user-event` は入れない
+  - 根拠 1: `user-event` の README 自身が「**実ブラウザでテストできるならそちらを優先しろ**」と書いており、代替として Vitest Browser Mode と Playwright を挙げている。`user-event` は jsdom / happy-dom 向けと位置づけられている
+  - 根拠 2: `@vitest/browser` の peerDependencies が `vitest: 4.1.10` の完全一致指定で、**現在の構成にそのまま乗る**。Playwright は別のランナーを持ち込むことになる
+  - **Button では不要**: 自前のキーボード処理を持たないため、活性化の経路がすべて `click` に収束する（`<button>` の Enter / Space も `<a href>` の Enter も、ブラウザが click に変換する）。既存の click のテストがキーボード経路も含めて保証している。**壊れようがないものにテストを書いても回帰は検出できない**（原則 6）
+  - 導入が要るようになる条件:
+    - 自前の `onKeyDown` を持つコンポーネント（Dialog の Escape / フォーカストラップ、Select・Menu・Tabs の矢印キー）
+    - jsdom では原理的に確かめられない挙動 — **中クリック / 右クリック → 新しいタブ**、ネイティブの Enter / Space → click 変換、フォーカスの実挙動
+  - **`href` を残す案（案 A）を却下した根拠は、ブラウザモードでしか実証できない**。現状は仕様知識に基づく判断で、実測していない
+  - 判断時期: Dialog または Select の着手時
+
+- [ ] **CONCEPT.md 6 節「キーボード操作のテストが全インタラクティブコンポーネントに存在する」の扱い**
+  - Button は自前のキーボード処理を持たないため、文字通り適用すると**回帰を検出できないテスト**を書くことになる
+  - ゲートの文言を「自前のキーボード処理を持つコンポーネント」に限定するか、Button を例外として理由を残すか
+  - 判断時期: 2 つ目のインタラクティブコンポーネント（Dialog / Select）を書くとき
 
 ---
 
