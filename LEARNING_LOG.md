@@ -168,8 +168,31 @@
 
 - [x] ~~**振る舞いテストの導入**~~ → jsdom / Testing Library を導入し `button.test.tsx` を作成（16 tests）
 
-- [ ] **`jest-axe` の導入**（CONCEPT.md 6 節の a11y ゲート）
-  - 未導入。`as="a"` のときのロールが `link` に変わるので、**polymorphic と a11y の相互作用**も検証対象になる
+- [x] ~~**`jest-axe` の導入**~~ → **`axe-core` を直接使う**形で導入した。ラッパー（`jest-axe` / `vitest-axe`）は使わない
+  - **`vitest-axe` を却下**: 最新が 0.1.0 で**最終公開が 2025-01-22**。1 年半以上更新がなく、依存の `axe-core` も `^4.4.2` と古い
+  - **`jest-axe` を却下**: 活発（11.0.0 / 2026-07-26）だが **`jest-matcher-utils` に依存**する。Vitest のプロジェクトに Jest のパッケージを引き込むことになる
+  - **`axe-core` 直接を採用**: ラッパーがやっているのは `axe.run()` を呼んで `violations` が空かを見ることと、失敗時のメッセージ整形だけ。依存を 1 つに抑えられ、本体の更新に直接追従できる。**将来 `@vitest/browser` に移っても `@axe-core/playwright` が同じ `violations` を返すので、検証部分がそのまま移せる**
+  - 実測（jsdom / `axe-core` 4.13.0）:
+    - `<Button><Icon /></Button>`（`iconOnly` を書かずアイコンだけ）→ **`button-name` 違反**。**型では防げていない唯一の穴**を axe が捕まえる（`children` があるかは型で見られるが、それがテキストを生むかは型の外）
+    - `<Button iconOnly aria-label="検索">` → 違反なし（7 ルール評価）
+    - `<Button as="a" href="/x" disabled>` → 違反なし（11 ルール評価）。**`role="link"` + `href` なし + `tabindex="0"` + `aria-disabled` の組み合わせが妥当だという裏付け**が取れた
+    - `inapplicable` が 77〜86 件。単体コンポーネントに適用対象外のルールが大半
+
+- [ ] **`color-contrast` ルールを無効にしている**（axe 導入時の判断）
+  - jsdom では `HTMLCanvasElement#getContext()` が未実装のため、axe がコントラスト比を計算できず `incomplete` になり、警告が毎回出る
+  - **無効にした理由 1**: jsdom では原理的に評価できない。判定不能なルールを走らせ続ける意味がない
+  - **無効にした理由 2**: このライブラリは CSS を同梱しない（D-006）。コントラストは利用者が当てるスタイル次第で、**ライブラリの責任範囲外**
+  - 却下した案: `canvas` パッケージを入れる — ネイティブビルドが必要な重い依存で、得るものが無い
+  - **再検討の条件**: `@vitest/browser` を入れたとき。実ブラウザではコントラストを評価できるので、**逆に有効化する判断がありうる**。ただし unstyled である限り責任範囲外という理由は残る
+
+- [ ] **CONCEPT.md の `jest-axe` の記述を `axe-core` に直す**
+  - 5 節の技術構成表（`a11y | jest-axe | CI で自動検証`）
+  - 6 節の品質ゲート（`jest-axe に全コンポーネントが違反ゼロで通る`）
+
+- [ ] **`npm audit` の high 1 件**
+  - `nanoid < 3.3.18`（`vite` 経由の推移的依存）。**dev 依存のみで実行時には入らない**
+  - `axe-core` の導入前から存在していたもの
+  - `npm audit fix` を実行するか、上流の更新を待つか未判断
 
 - [ ] **ブラウザ環境でのテストを `@vitest/browser` で行う**（方針は決定。導入時期は未定）
   - **決定**: 実ブラウザでのテストが要るようになったら `@vitest/browser` を使う。`@testing-library/user-event` は入れない
