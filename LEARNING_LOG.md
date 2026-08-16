@@ -185,14 +185,9 @@
   - 却下した案: `canvas` パッケージを入れる — ネイティブビルドが必要な重い依存で、得るものが無い
   - **再検討の条件**: `@vitest/browser` を入れたとき。実ブラウザではコントラストを評価できるので、**逆に有効化する判断がありうる**。ただし unstyled である限り責任範囲外という理由は残る
 
-- [ ] **CONCEPT.md の `jest-axe` の記述を `axe-core` に直す**
-  - 5 節の技術構成表（`a11y | jest-axe | CI で自動検証`）
-  - 6 節の品質ゲート（`jest-axe に全コンポーネントが違反ゼロで通る`）
+- [x] ~~**CONCEPT.md の `jest-axe` の記述を `axe-core` に直す**~~ → 5 節の技術構成表、6 節の品質ゲート、原則 5 の本文の 3 箇所を更新
 
-- [ ] **`npm audit` の high 1 件**
-  - `nanoid < 3.3.18`（`vite` 経由の推移的依存）。**dev 依存のみで実行時には入らない**
-  - `axe-core` の導入前から存在していたもの
-  - `npm audit fix` を実行するか、上流の更新を待つか未判断
+- [x] ~~**`npm audit` の high 1 件**~~ → `npm audit fix` で解消（`nanoid` 3.3.17 → 3.3.18）。経路は `vitest → vite → postcss → nanoid` で **dev 依存のみ**。`postcss` の要求範囲（`^3.3.17`）内の更新なので `package.json` は変わらず、`package-lock.json` のみの差分になった
 
 - [ ] **ブラウザ環境でのテストを `@vitest/browser` で行う**（方針は決定。導入時期は未定）
   - **決定**: 実ブラウザでのテストが要るようになったら `@vitest/browser` を使う。`@testing-library/user-event` は入れない
