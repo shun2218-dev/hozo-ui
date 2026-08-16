@@ -1,7 +1,41 @@
 import type { ReactNode } from "react"
 
+/** 無効状態に関する props */
+type DisabledProps = {
+    /**
+     * ネイティブの `disabled` 属性ではなく `aria-disabled` で表現する。
+     * フォーカスは受け取れるまま残るため、支援技術の利用者もボタンの存在に気づける。
+     *
+     * `as="a"` のときは `href` を外し、`role` と `tabIndex` を補う。
+     * リンクとしての遷移が起きなくなる。
+     *
+     * `as` に関数コンポーネントを渡した場合、この処理は働かない（`href` が残る）。
+     *
+     * @example
+     * 送信中だけ無効にする
+     * ```tsx
+     * <Button disabled={isSubmitting}>送信する</Button>
+     * ```
+     */
+    disabled?: boolean
+    /**
+     * 利用者が直接指定することはできない。`disabled` を使う。
+     *
+     * 無効状態は `disabled` prop 経由でのみ設定できる。`aria-disabled` を直接書くと
+     * 支援技術には無効と伝わるのに `onClick` は発火するため、意味論と挙動が食い違う。
+     * `disabled` を使えば `aria-disabled` の付与と起動の抑止が同時に行われる。
+     *
+     * @example
+     * 正しい書き方
+     * ```tsx
+     * <Button disabled>送信する</Button>
+     * ```
+     */
+    "aria-disabled"?: never
+}
+
 /** アイコンのみのボタン */
-type IconButtonProps = {
+type IconButtonProps = DisabledProps & {
     /** 
      * 必要な時だけ記述する  
      * 出し分けをする際は要素ごと分岐する
@@ -28,7 +62,7 @@ type IconButtonProps = {
 }
 
 /** 通常のテキストボタン */
-type BaseButtonProps = {
+type BaseButtonProps = DisabledProps & {
     /** 通常のボタンでは指定不可 */
     iconOnly?: never
     /** ボタンのラベル文字列 */

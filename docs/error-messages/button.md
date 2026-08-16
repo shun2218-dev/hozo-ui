@@ -4,7 +4,7 @@
 
 書き方は [README.md](./README.md) を参照。
 
-採取条件: `npx tsc --noEmit --pretty false`。E-001〜006 は `--noErrorTruncation` を付けても**出力が完全に同じ**（畳み込みが発生していない）。
+採取条件: `npx tsc --noEmit --pretty false`。E-001〜007 は `--noErrorTruncation` を付けても**出力が完全に同じ**（畳み込みが発生していない）。
 
 ## 再採取の記録
 
@@ -36,13 +36,15 @@ CONCEPT.md 7 節の「既知の罠 1 — エラーメッセージの崩壊」は
 
 ```
 error TS2322: Type '{ children: string; iconOnly: true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
-  Property '"aria-label"' is missing in type '{ children: string; iconOnly: true; }' but required in type 'IconButtonProps'.
+  Property '"aria-label"' is missing in type '{ children: string; iconOnly: true; }' but required in type '{ iconOnly: true; "aria-label": string; children: ReactNode; }'.
 ```
 
 - **行数**: 2
 - **読めるか**: ○
-- **利用者は原因に辿り着けるか**: 辿り着ける。2 行目に `Property '"aria-label"' is missing` と欠けている prop 名が出る。ただし摩擦が 2 つある。(1) 1 行目の `IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>` は情報量ゼロで、読み飛ばす必要がある（polymorphic 導入で表示は長くなったが、読み飛ばす対象である点は変わらない）。(2) `IconButtonProps` は **export していない内部の型名**で、利用者が照合できる先が存在しない
-- **改善案**: 「なぜ必須なのか」（= `iconOnly` を書いたから）がメッセージのどこにも無い。`iconOnly: true` は再掲されているので推測は可能だが、明示されてはいない。分岐の型名を利用者に意味が通る名前にするか、ヒント型を混ぜて理由を載せる余地がある。ただし現状でも直し方には到達できるので、優先度は中
+- **利用者は原因に辿り着けるか**: 辿り着ける。2 行目に `Property '"aria-label"' is missing` と欠けている prop 名が出る。摩擦は 1 行目の `IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>` が情報量ゼロで読み飛ばす必要がある点のみ
+- **改善案**: 「なぜ必須なのか」（= `iconOnly` を書いたから）がメッセージのどこにも無い。ただし要求される形が構造として出ているので、`iconOnly` と `aria-label` と `children` が揃った形だと読める。現状でも直し方には到達できるので優先度は低
+
+**改善の経緯**: 以前は `but required in type 'IconButtonProps'.` と表示され、**export していない内部の型名を名指しされて照合先が無い**のが最大の摩擦だった。`DisabledProps` を切り出して `IconButtonProps = DisabledProps & {...}` にしたところ、tsc が交差型の**名前を持たない側**を報告するようになり、型名の代わりに構造が出るようになった。積み残しの「union の分岐型をインライン展開するか」で議論していた課題が、**重複解消の副作用として解決した**。
 
 ---
 
@@ -58,13 +60,13 @@ error TS2322: Type '{ children: string; iconOnly: true; }' is not assignable to 
 
 ```
 error TS2322: Type '{ iconOnly: true; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
-  Property 'children' is missing in type '{ iconOnly: true; "aria-label": string; }' but required in type 'IconButtonProps'.
+  Property 'children' is missing in type '{ iconOnly: true; "aria-label": string; }' but required in type '{ iconOnly: true; "aria-label": string; children: ReactNode; }'.
 ```
 
 - **行数**: 2
 - **読めるか**: ○
-- **利用者は原因に辿り着けるか**: 辿り着ける。E-001 と同じ構造だが、`children` は React 標準の概念なので、内部型名 `IconButtonProps` を知らなくても意味が通る。E-001 より親切
-- **改善案**: 特になし。優先度低。内部型名の露出は E-001 と共通の課題で、そちらの改善に含まれる
+- **利用者は原因に辿り着けるか**: 辿り着ける。E-001 と同じ構造で、`children` は React 標準の概念なので迷わない
+- **改善案**: 特になし。優先度低。E-001 と同じく、以前は `IconButtonProps` という内部型名が出ていたが、`DisabledProps` の切り出しにより構造表示に変わった
 
 ---
 
@@ -157,21 +159,55 @@ error TS2322: Type '{ children: string; href: string; }' is not assignable to ty
 **書いたコード**
 
 ```tsx
-<Button as="a" href="/x" disabled>text</Button>
+<Button as="a" href="/x" formAction="/y">text</Button>
 ```
 
 **エラー全文**
 
 ```
-error TS2322: Type '{ children: string; as: "a"; href: string; disabled: true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
-  Property 'disabled' does not exist on type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
+error TS2322: Type '{ children: string; as: "a"; href: string; formAction: string; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
+  Property 'formAction' does not exist on type 'IntrinsicAttributes & PolymorphicProps<"a", ButtonProps>'.
 ```
 
 - **行数**: 2
 - **読めるか**: ○
 - **利用者は原因に辿り着けるか**: 辿り着ける。型引数が `"a"` になっているので、`as` の指定と対応づけられる。**polymorphic が型として機能していることの証拠でもある**
-- **観察**: このエラーは積み残しの「`disabled` の表現方法」と直結する。`as="a"` では `disabled` を渡せないため、無効状態を `disabled` 属性で表現する設計は polymorphic と両立しない
 - **改善案**: 特になし。優先度低
+
+**採取例を差し替えた経緯**: 当初は `<Button as="a" href="/x" disabled>` を例にしていた。当時は `disabled` が `<button>` 固有の属性だったためエラーになり、「`as="a"` では `disabled` を渡せないので、無効状態を `disabled` 属性で表現する設計は polymorphic と両立しない」という観察の根拠になっていた。
+
+その後 D-007 で **`disabled` を自前 prop にした**ため、`as` が何であっても受け取れるようになり**このコードはエラーにならなくなった**。同じ「要素に無い属性」を示す例として `formAction`（`<button>` 固有で `<a>` に無い）に差し替えている。
+
+元の観察自体は D-007 の判断根拠として生きているが、**エラーとしては再現しない**。
+
+---
+
+### E-007 | `aria-disabled` を直接書く
+
+`disabled` prop の存在を知らない利用者が自然に書く形。無効状態を ARIA で表現しようとして、ライブラリの入口を通らずに書いてしまうケース。
+
+**書いたコード**
+
+```tsx
+<Button aria-disabled>ボタン</Button>
+```
+
+**エラー全文**
+
+```
+error TS2322: Type '{ children: string; "aria-disabled": true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
+  Type '{ children: string; "aria-disabled": true; }' is not assignable to type 'DisabledProps'.
+    Types of property '"aria-disabled"' are incompatible.
+      Type 'true' is not assignable to type 'never'.
+```
+
+- **行数**: 4
+- **読めるか**: ○
+- **利用者は原因に辿り着けるか**: 「`aria-disabled` に `true` を入れられない」ことは読める。ただし**代わりに何を書けばいいか（`disabled` prop）は示されない**。`never` という型名から「禁止されている」と読み取るには TypeScript の知識が要る
+- **改善案**: 次の一手（`disabled` を使う）が本文に出ない。**JSDoc 側で補う**（D-005 の役割分担）。ヒント型で文章を埋め込む手もあるが、D-004 で却下した理由（型定義の可読性が落ちる、条件型が入ると畳み込みで消える）がここでも当てはまる
+- **観察**: `DisabledProps` という **export していない内部の型名**が出ている。E-001 / E-002 が構造表示に変わって解消した問題が、こちらでは新しく発生した。`DisabledProps` は交差型の**名前を持つ側**なので、tsc が名前で報告する。**名前を持つ型を作ると照合先の無い名前が露出する**という関係が、同じファイルの中で対照的に現れている
+
+**この検査に辿り着くまでの経緯**: 当初は `PolymorphicProps` の `Omit` で `"aria-disabled"` を除いていたが、**JSX ではハイフンを含む属性名が余剰プロパティ検査を通過する**ため、型から消しても書けてしまっていた（`data-testid` が `PolymorphicProps` に無くても書けるのと同じルール）。自前 props 側で `"aria-disabled"?: never` と宣言する形に変えて、初めてこのエラーが出るようになった。
 
 ---
 

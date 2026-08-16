@@ -40,6 +40,14 @@ describe("ButtonProps", () => {
     test("iconOnly は aria-label を省略できない", () => {
         expectTypeOf<{ iconOnly: true, children: ReactNode }>().not.toExtend<ButtonProps>()
     })
+
+    test("disabled を受け取れる", () => {
+        expectTypeOf<{ disabled: boolean, children: ReactNode }>().toExtend<ButtonProps>()
+    })
+
+    test("iconOnly と disabled を同時に受け取れる", () => {
+        expectTypeOf<{ iconOnly: true, "aria-label": string, disabled: boolean, children: ReactNode }>().toExtend<ButtonProps>()
+    })
 })
 
 describe("ButtonProps(JSX)", () => {
@@ -80,5 +88,19 @@ describe("ButtonProps(JSX)", () => {
         const buttonRef = createRef<HTMLButtonElement>()
         // @ts-expect-error as="a" で ref が button 用のため
         return <Button as="a" ref={buttonRef}>ボタン</Button>
+    })
+
+    test("as='a' でも disabled を受け取れる", () => {
+        return <Button as="a" href="/" disabled>ボタン</Button>
+    })
+
+    test("as 省略に aria-disabled を利用者が直接書けない", () => {
+        // @ts-expect-error aria-disabled を利用者が直接書くのは禁止のため
+        return <Button aria-disabled>ボタン</Button>
+    })
+
+    test("as='a' でも aria-disabled を利用者が直接書けない", () => {
+        // @ts-expect-error as で他の要素を指定しても aria-disabled を利用者が直接書くのは禁止のため
+        return <Button as="a" href="/" aria-disabled>ボタン</Button>
     })
 })
