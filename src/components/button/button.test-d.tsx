@@ -93,4 +93,14 @@ describe("ButtonProps(JSX)", () => {
     test("as='a' でも disabled を受け取れる", () => {
         return <Button as="a" href="/" disabled>ボタン</Button>
     })
+
+    test("as 省略に aria-disabled を利用者が直接書けない", () => {
+        // @ts-expect-error aria-disabled を利用者が直接書くのは禁止のため
+        return <Button aria-disabled>ボタン</Button>
+    })
+
+    test("as='a' でも aria-disabled を利用者が直接書けない", () => {
+        // @ts-expect-error as で他の要素を指定しても aria-disabled を利用者が直接書くのは禁止のため
+        return <Button as="a" href="/" aria-disabled>ボタン</Button>
+    })
 })

@@ -26,9 +26,4 @@ describe("PolymorphicProps", () => {
     test("E が 'button' のとき ref が HTMLButtonElement になる", () => {
         expectTypeOf<PolymorphicProps<"button", OwnProps>["ref"]>().toEqualTypeOf<Ref<HTMLButtonElement> | undefined>()
     })
-
-    test("aria-disabled を利用者が直接書けない", () => {
-        expectTypeOf<"aria-disabled">().not.toExtend<keyof PolymorphicProps<"button", OwnProps>>()
-        expectTypeOf<"aria-disabled">().not.toExtend<keyof PolymorphicProps<"a", OwnProps>>()
-    })
 })

@@ -41,6 +41,20 @@ type IconButtonProps = {
      * ```
      */
     disabled?: boolean
+    /**
+     * 利用者が直接指定することはできない。`disabled` を使う。
+     *
+     * 無効状態は `disabled` prop 経由でのみ設定できる。`aria-disabled` を直接書くと
+     * 支援技術には無効と伝わるのに `onClick` は発火するため、意味論と挙動が食い違う。
+     * `disabled` を使えば `aria-disabled` の付与と起動の抑止が同時に行われる。
+     *
+     * @example
+     * 正しい書き方
+     * ```tsx
+     * <Button disabled>送信する</Button>
+     * ```
+     */
+    "aria-disabled"?: never
 }
 
 /** 通常のテキストボタン */
@@ -65,6 +79,20 @@ type BaseButtonProps = {
      * ```
      */
     disabled?: boolean
+    /**
+     * 利用者が直接指定することはできない。`disabled` を使う。
+     *
+     * 無効状態は `disabled` prop 経由でのみ設定できる。`aria-disabled` を直接書くと
+     * 支援技術には無効と伝わるのに `onClick` は発火するため、意味論と挙動が食い違う。
+     * `disabled` を使えば `aria-disabled` の付与と起動の抑止が同時に行われる。
+     *
+     * @example
+     * 正しい書き方
+     * ```tsx
+     * <Button disabled>送信する</Button>
+     * ```
+     */
+    "aria-disabled"?: never
 }
 
 /**
