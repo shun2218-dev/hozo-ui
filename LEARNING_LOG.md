@@ -235,13 +235,20 @@
   - ネイティブの `disabled` 属性は使わず、**`aria-disabled` で表現する**。併用しない（WAI-ARIA 第一原則）
   - `disabled` の型は **`boolean`**（`iconOnly` の `true` リテラルとは逆）
   - `as="a"` のときは **`href` を外し、`role="link"` と `tabIndex={0}` を補う**
-  - `aria-disabled` は `PolymorphicProps` の `Omit` で塞ぎ、**入口を `disabled` に一本化**
+  - `aria-disabled` は**自前 props 側で `"aria-disabled"?: never` と宣言**して塞ぎ、入口を `disabled` に一本化
 - **`iconOnly` と型が分かれた理由（D-003 と逆になった箇所）**: `iconOnly` は「必要なときだけ書く」prop で、変数で渡す動機が無かった。`disabled` は **`disabled={isSubmitting}` のように変数で渡すのが普通**の書き方。同じ「真偽の prop」でも、利用者が値を計算して渡すかどうかで判断が分かれる
 - **却下した案とその理由**:
   - **ネイティブの `disabled`** — `<Button as="a">` の DOM は `<a>` で `disabled` 属性が存在しない（docs の E-006 で実測）。polymorphic と両立しない。加えてフォーカスを失うため、支援技術の利用者がボタンの存在に気づけない
   - **何もしない（利用者に `aria-disabled` を書かせる）** — `aria-disabled` は意味論を伝えるだけで挙動を変えない。支援技術には無効と伝わるのに `onClick` が発火する状態を作れてしまう。原則 1 が表現不可能にすべきと言っているもの
   - **`href` を残して `preventDefault` する** — クリック以外の経路が塞げない。中クリックは `auxclick`、**右クリック → 新しいタブは JS では止められない**。無効と表示しているのに遷移できる
   - **`as="a"` と `disabled` の同時指定を型で禁じる** — 検討したが採らなかった。条件型が要り、エラーメッセージへの影響が読めない
+- **後日の訂正 — `Omit` では塞げていなかった**:
+  - 当初は `PolymorphicProps` の `Omit` に `"aria-disabled"` を足す形にしていたが、**JSX ではハイフンを含む属性名が余剰プロパティ検査を通過する**ため、型から消しても `<Button aria-disabled>` が書けてしまっていた。`data-testid` が `PolymorphicProps` に無くても書けるのと同じルール
+  - **`keyof` から消えることと、JSX に書けないことは別だった。** 型テスト（`expectTypeOf<"aria-disabled">().not.toExtend<keyof PolymorphicProps<...>>()`）は緑だったが、テスト名が主張していること（利用者が直接書けない）を検証していなかった。L-001 の「代入可能性では構造の欠落を検出できない」と同じ種類の失敗
+  - 塞ぐには**プロパティを型に存在させたうえで値を `never` にする**必要がある。`Omit` は型から消すだけで、消えたプロパティの値は検査されない
+  - 副次的な改善: `Omit` を外したことで、**汎用型が Button の都合を知らない状態に戻った**。`aria-disabled` を自前 prop で管理するのは Button の設計判断であって、Select や Dialog が同じ形になるとは限らない
+  - 検証は **JSX で書く**必要がある。`keyof` ベースの型テストでは検出できない
+- **型を回避されれば防げない**: キャストで無理やり渡せば `aria-disabled="true"` が DOM に出る（実測済み）。実行時のガードは持たない。CONCEPT.md の主張（実行時に警告するのではなく型で防ぐ）に沿った割り切りだが、**型だけの保証であることは事実**
 - **既知の穴**: `as === "a"` の**文字列比較だけ**で判定している。`<Button as={Link} href="/x" disabled>`（react-router 等）では `href` が残ったまま `aria-disabled` だけ付き、**遷移できてしまう**。関数コンポーネントを渡された場合の扱いは未対応
 - **未検証**: `href` を残す案を却下した根拠（中クリック・右クリック経由の遷移）は**仕様知識に基づくもので、実測していない**。jsdom では確かめられない。`@vitest/browser` を入れたときに検証する
 - **`CONCEPT.md` のどの原則に基づくか**: 原則 1（意味論と挙動が食い違う状態を作らせない）、原則 5（a11y）、原則 4（`as` で要素が変わっても成立する表現）

@@ -180,6 +180,34 @@ error TS2322: Type '{ children: string; as: "a"; href: string; formAction: strin
 
 ---
 
+### E-007 | `aria-disabled` を直接書く
+
+`disabled` prop の存在を知らない利用者が自然に書く形。無効状態を ARIA で表現しようとして、ライブラリの入口を通らずに書いてしまうケース。
+
+**書いたコード**
+
+```tsx
+<Button aria-disabled>ボタン</Button>
+```
+
+**エラー全文**
+
+```
+error TS2322: Type '{ children: string; "aria-disabled": true; }' is not assignable to type 'IntrinsicAttributes & PolymorphicProps<"button", ButtonProps>'.
+  Type '{ children: string; "aria-disabled": true; }' is not assignable to type 'BaseButtonProps'.
+    Types of property '"aria-disabled"' are incompatible.
+      Type 'true' is not assignable to type 'never'.
+```
+
+- **行数**: 4
+- **読めるか**: ○
+- **利用者は原因に辿り着けるか**: 「`aria-disabled` に `true` を入れられない」ことは読める。ただし**代わりに何を書けばいいか（`disabled` prop）は示されない**。`never` という型名から「禁止されている」と読み取るには TypeScript の知識が要る
+- **改善案**: 次の一手（`disabled` を使う）が本文に出ない。**JSDoc 側で補う**（D-005 の役割分担）。ヒント型で文章を埋め込む手もあるが、D-004 で却下した理由（型定義の可読性が落ちる、条件型が入ると畳み込みで消える）がここでも当てはまる
+
+**この検査に辿り着くまでの経緯**: 当初は `PolymorphicProps` の `Omit` で `"aria-disabled"` を除いていたが、**JSX ではハイフンを含む属性名が余剰プロパティ検査を通過する**ため、型から消しても書けてしまっていた（`data-testid` が `PolymorphicProps` に無くても書けるのと同じルール）。自前 props 側で `"aria-disabled"?: never` と宣言する形に変えて、初めてこのエラーが出るようになった。
+
+---
+
 ## 参考 — 外部ライブラリの例
 
 自作の型ではないが、比較対象として残す。
